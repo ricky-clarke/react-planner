@@ -3,25 +3,115 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
+  /* --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+  --background-end-rgb: 255, 255, 255; */
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
+  background-color: #071020;
+  color:#fff;
+  /* color: rgb(var(--foreground-rgb)); */
+  /* background: linear-gradient(
       to bottom,
       transparent,
       rgb(var(--background-end-rgb))
     )
-    rgb(var(--background-start-rgb));
+    rgb(var(--background-start-rgb)); */
+}
+
+.container {
+  padding: 2rem;
+}
+
+h1 {
+  font-size:2em;
+  margin-bottom:1em;
+}
+
+.sub_heading {
+  font-size:0.825em;
+}
+
+.sprint_grid {
+  display: grid;
+  gap:1em;
+  grid-template-columns: 1fr;
+  margin-top:1.5em;
+}
+
+@media (min-width:992px) {
+  .sprint_grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.profile_list {
+  display: grid;
+  gap:1.5em;
+}
+
+.btn {
+  border-radius: 5px;
+  padding:0.5em 1em;
+  position: relative;
+}
+
+.btn--p0 {
+  padding:0;
+}
+
+.btn--grey {
+  background-color: #e0e0e0;
+  color:#071020
+}
+
+.btn--d-grey {
+  background-color: #ccc;
+  color:#071020
+}
+
+.btn--submit {
+  background-color: green;
+  color: #fff;
+}
+
+.btn--cancel {
+  background-color: red;
+  color: #fff;
+}
+
+
+.btn--reveal  {
+  position:relative;
+}
+
+.btn--reveal span {
+  opacity:0;
+  width:0;
+  transition: 0.3s width ease-in, 0.3s opacity ease-in;
+}
+
+.btn--reveal:hover span {
+  opacity:1;
+  transition: 0.3s width ease-in, 0.3s opacity ease-in;
+  width:30px;
+}
+
+.masonry-grid {
+  display: -webkit-box; /* Not needed if autoprefixing */
+  display: -ms-flexbox; /* Not needed if autoprefixing */
+  display: flex;
+  margin-left: -30px; /* gutter size offset */
+  width: auto;
+  margin:3em 0;
+}
+.masonry-grid_column {
+  padding-left: 50px; /* gutter size */
+  background-clip: padding-box;
+}
+
+/* Style your items */
+.masonry-grid_column > div { /* change div to reference your elements you put in <Masonry> */
+  margin-bottom: 50px;
 }
