@@ -24,6 +24,8 @@ form {
     }
 
     input {
+        background-color:transparent;
+        border:1px solid #fff;
         margin-bottom:1em;
         padding:0.5em;
     }

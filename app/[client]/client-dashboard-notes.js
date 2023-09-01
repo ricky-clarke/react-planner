@@ -19,7 +19,7 @@ export const Note = styled.div`
     }
 
     h3 {
-        font-size:1.4em;
+        font-size:1.3em;
         margin:0 0 0.5em 0;
     }
 

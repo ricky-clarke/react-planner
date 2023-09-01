@@ -11,22 +11,25 @@
 body {
   background-color: #071020;
   color:#fff;
-  /* color: rgb(var(--foreground-rgb)); */
-  /* background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb)); */
 }
 
 .container {
   padding: 2rem;
 }
 
+.container--main {
+  padding-top:1em;
+}
+
+.home_container {
+  align-items: center;
+  display: flex;
+  height: 100dvh;
+  justify-content: center;
+}
+
 h1 {
   font-size:2em;
-  margin-bottom:1em;
 }
 
 .sub_heading {
@@ -35,7 +38,7 @@ h1 {
 
 .sprint_grid {
   display: grid;
-  gap:1em;
+  gap:2em;
   grid-template-columns: 1fr;
   margin-top:1.5em;
 }
@@ -51,9 +54,13 @@ h1 {
   gap:1.5em;
 }
 
+.color--light-blue {
+  color:#03dffc;
+}
+
 .btn {
   border-radius: 5px;
-  padding:0.5em 1em;
+  padding:0.25em 0.5em;
   position: relative;
 }
 
@@ -64,6 +71,11 @@ h1 {
 .btn--grey {
   background-color: #e0e0e0;
   color:#071020
+}
+
+.btn--light-blue {
+  background:#03dffc;
+  color:#fff;
 }
 
 .btn--d-grey {
@@ -80,7 +92,6 @@ h1 {
   background-color: red;
   color: #fff;
 }
-
 
 .btn--reveal  {
   position:relative;
@@ -106,8 +117,9 @@ h1 {
   width: auto;
   margin:3em 0;
 }
+
 .masonry-grid_column {
-  padding-left: 50px; /* gutter size */
+  padding-right: 50px; /* gutter size */
   background-clip: padding-box;
 }
 

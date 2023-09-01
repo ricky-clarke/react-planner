@@ -1,6 +1,10 @@
 export const INITIAL_STATE = {
   taskID : ' ',
-  newProfileModal : false
+  modalOpen: false,
+  newProfileModal : false,
+  newUserModal : false,
+  settingsModal : false,
+  secondaryColor : ''
   // contrastButton : 'dark',
   // displayButton : 'grid',
   // menuOpen : false,
@@ -17,11 +21,31 @@ export const GlobalReducer = (state, action) => {
                 ...state,
                 taskID: action.payload
               };
+              case "MODALOPEN":
+                return {
+                  ...state,
+                  modalOpen: action.payload
+                };
             case "NEWPROFILEOPEN":
               return {
                 ...state,
                 newProfileModal: action.payload
               };
+            case "NEWUSEROPEN":
+                return {
+                  ...state,
+                  newUserModal: action.payload
+                };
+                case "SETTINGSOPEN":
+                  return {
+                    ...state,
+                    settingsModal: action.payload
+                  };
+                case "SECONDARYCOLOR":
+                    return {
+                      ...state,
+                      secondaryColor: action.payload
+                    };
           // case "CONTRAST":
           //   return {
           //     ...state,

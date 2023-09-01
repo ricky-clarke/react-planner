@@ -12,22 +12,25 @@ import {
     deleteDoc,
     serverTimestamp, 
 } from 'firebase/firestore';
-import generateRandomString from '@/app/_functions/random_string';
 import { db } from '@/src/firebase';
 import { Editor } from '@tinymce/tinymce-react';
 import Layout from "@/app/_components/layout/layout.component";
-import Link from "next/link";
 import Modal from "@/app/_components/modal/modal.component";
+import ProjectHeader from '@/app/_components/project-header/project-header.component';
+import UpdateMessage from '@/app/_components/update-message/update-message.component';
 import { Note, NoteMeta } from '@/app/[client]/client-dashboard-notes';
-import { DeleteModal } from '@/app/styles/delete-modal';
+import FormatDate from '@/app/_functions/formate_date';
+import generateRandomString from '@/app/_functions/random_string';
 import Masonry from 'react-masonry-css';
 import PencilIcon from '@/app/_svgs/pencil';
-import FormatDate from '@/app/_functions/formate_date';
+import { DeleteModal } from '@/app/styles/delete-modal';
 
 export default function Page({params}) {
 
   // Get the first part of the URL (excluding an empty string at the beginning)
   const prof_id = usePathname()
+
+  const text_api_key = `${process.env.NEXT_PUBLIC_TINYMCE}`;
 
   // Get project info
   const [profileInfo, profileInfoHandler] = useState({})
@@ -39,10 +42,12 @@ export default function Page({params}) {
 
   const editorRef = useRef(null);
 
+  // Modal form
   const [addNoteForm, addNoteFormHandler] = useState(false)
 
   const [getNotes, getNotesHandler] = useState([])
 
+  // View note in modal
   const [viewNoteOpen, viewNoteHandler] = useState(false)
 
   const [noteOpenInfo, noteOpenInfoHandler] = useState({})
@@ -51,20 +56,21 @@ export default function Page({params}) {
   // Edit note
   const [editNoteOpen, editNoteOpenHandler] = useState(false) // Edit note in modal
   // add values to state when edit modal open
-  const [editedNote, editedNoteHandler] = useState({ 
-    title: '',
-    content: '',
-});
+  const [editedNote, editedNoteHandler] = useState({});
 
-const [newNote, setNewNote] = useState({ 
-    title: ' ',
-    content: ' ',
-    created_by : '',
-    published_date : serverTimestamp(),
-});
+  const [newNote, setNewNote] = useState({ 
+      title: ' ',
+      content: ' ',
+      created_by : '',
+      published_date : serverTimestamp(),
+  });
 
-// Delete note
-const [deleteNoteWarning, DeleteNoteWarningHandler] = useState(false);
+  // Delete note
+  const [deleteNoteWarning, DeleteNoteWarningHandler] = useState(false);
+
+  // Updated message
+  const [addNoteMessage, addNoteMessageHandler] = useState(false)
+
 
 // Get project info
 useEffect(() => {
@@ -80,6 +86,14 @@ useEffect(() => {
   };
   fetchData();
 }, []);
+
+const handleNoteInputChange = (event) => {
+  const { name, value } = event.target;
+  setNewNote((prevData) => ({
+    ...prevData,
+    [name]: value
+  }));
+};
 
 // Add note to DB
 const addNote = async (e) => {
@@ -100,12 +114,12 @@ const addNote = async (e) => {
         });
 
         // Clear form values
-        setNewNote( {
-            title: ' ',
-            content: ' ',
-            created_by: ' ',
-            published_date: '',
-        })
+        // setNewNote( {
+        //     title: ' ',
+        //     content: ' ',
+        //     created_by: ' ',
+        //     published_date: '',
+        // })
 
         addNoteFormHandler(false) // Hide form on submit
 
@@ -127,8 +141,8 @@ useEffect ( () => {
 
 }, [])
 
-  // View note
-  const viewNote = (id) => {
+// View note
+const viewNote = (id) => {
 
     if(viewNoteOpen == false) {
       viewNoteHandler(true)
@@ -141,10 +155,10 @@ useEffect ( () => {
       editedNoteHandler({})
     }
    
-  }
+}
 
-  // Get modal note info
-  useEffect ( () => {
+// Get modal note info
+useEffect ( () => {
 
     async function fetchData() {
         try {
@@ -180,22 +194,38 @@ else {
 }
 
 // Edit note (update DB)
-const editNote = async (e) => {
-       
+const editNote = (e) => {
+
+         
   e.preventDefault();
 
-  if(editedNote.title !== '' ||
-  editedNote.content !== '')  {
+  const noteUpdated = async () => {
 
-  await updateDoc(doc(collection(db, "profile"), profile_id, 'projects', project_id, 'notes', noteOpenInfo.note_id), {
-      title: editedNote.title.trim(),
-      content: editedNote.content,
-  });
+    try {
+      
+          if(editedNote.title !== '' ||
+          editedNote.content !== '')  {
 
-    editNoteOpenHandler(false) // Close Edit note form (inside modal)
-    editedNoteHandler({ }) // Clear state
-    noteOpenInfoHandler({note_id : noteOpenInfo.note_id })
+          await updateDoc(doc(collection(db, "profile"), profile_id, 'projects', project_id, 'notes', noteOpenInfo.note_id), {
+              title: editedNote.title.trim(),
+              content: editedNote.content,
+          });
+
+            editNoteOpenHandler(false) // Close Edit note form (inside modal)
+            editedNoteHandler({ }) // Clear state
+            noteOpenInfoHandler({note_id : noteOpenInfo.note_id })
+            addNoteMessageHandler(true)
+          }
+
+    }
+    catch (error) {
+      console.error('An error occurred:', error.message);
+    }
+
   }
+
+  noteUpdated()
+  addNoteMessageHandler(false)
 
 }
 
@@ -220,9 +250,6 @@ const DeleteNote = () => {
   DeleteNoteWarningHandler(false)
   viewNoteHandler(false)
   noteOpenInfoHandler({note_id : ' ' })
-
-
-
 }
 
 // Masonry settings
@@ -240,18 +267,19 @@ const sortedNotes = getNotes?.slice().sort((b, a) => {
 
   return (
     <Layout>
-        <p className="sub_heading"><Link href={`/${profile_id}`}>{profileInfo.profile_name}</Link></p>
-        <div className="flex align-center">
-          <h1 className="pr-5 mb-0">Notes</h1>
-        </div>
-        <div className="text-center my-3 flex justify-center gap-6 items-center">
+
+        <div className="flex justify-between content-baseline">
+          <ProjectHeader
+            page_title='Notes'
+            profile_name={profileInfo?.profile_name}
+            project_id={project_id}
+          />
+          <div className="text-center flex justify-center gap-6 items-center">
             <a href={`${project_url}`}>Tasks</a>
-            <span>Budget</span>
-            <span><b>Notes</b></span>
-            <span>Resources</span>
-            <span>|</span>
+            <span><b>Notes</b></span>|
             <button className='btn btn--submit' onClick={() => {addNoteFormHandler(true)}}>Create a note</button>
-        </div>
+          </div>
+      </div>
 
           <Masonry
               breakpointCols={breakpointColumnsObj}
@@ -276,13 +304,13 @@ const sortedNotes = getNotes?.slice().sort((b, a) => {
                             <h2>Add note</h2>
                             <p className='label'><label>Title</label></p>
                                 <input 
-                                onChange={(e) => { setNewNote({...newNote, title: e.target.value}) }}
+                               onChange={(e) => { setNewNote({...newNote, title: e.target.value}) }}
                                 type="text" 
                                 placeholder = "Note title"
                                 required
                                 />
-                            <Editor
-                                    apiKey="djgjx6t37zoqxtoml83855c5n48wf0and2mh3qvzfa39u7uo"
+                                 <Editor
+                                    apiKey={text_api_key}
                                     onInit={(evt, editor) => editorRef.current = editor}
                                     onChange={(e) => { setNewNote({...newNote, content: editorRef.current.getContent()}) }}
                                     initialValue=""
@@ -290,14 +318,11 @@ const sortedNotes = getNotes?.slice().sort((b, a) => {
                                     height: 300,
                                     menubar: false,
                                     plugins: [
-                                    'advlist','advcode','advtable','autolink','checklist','export',
-                                    'lists','link','image','charmap','preview','anchor','searchreplace','visualblocks',
-                                    'powerpaste','fullscreen','formatpainter','insertdatetime','media','table','help','wordcount'
+                                    'advlist','autolink', 'lists','link','image','charmap','preview','anchor','searchreplace','visualblocks','fullscreen','insertdatetime','media','table','help','wordcount'
                                     ],
                                     toolbar: 'link undo redo | casechange blocks | bold italic backcolor | ' +
                                     'alignleft aligncenter alignright alignjustify | ' +
                                     'bullist numlist checklist | removeformat | a11ycheck code'
-                                    // content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
                                     }}
                                     />
                         </div>
@@ -329,30 +354,27 @@ const sortedNotes = getNotes?.slice().sort((b, a) => {
                               <form>
                                 <p className='label'><label>Title</label></p>
                                   <input 
-                                  className='mb-3'
+                                  className='mb-3' 
                                   onChange={(e) => { editedNoteHandler({...editedNote, title: e.target.value}) }}
                                   type="text" 
-                                  placeholder = {getNoteInfo?.title}
+                                  defaultValue = {getNoteInfo?.title}
                                   />
-                                <Editor
-                                      apiKey="djgjx6t37zoqxtoml83855c5n48wf0and2mh3qvzfa39u7uo"
-                                        onInit={(evt, editor) => editorRef.current = editor}
-                                        onChange={(e) => { editedNoteHandler({...editedNote, content: editorRef.current.getContent()}) }}
-                                        initialValue={getNoteInfo?.content}
-                                        init={{
-                                        height: 300,
-                                        menubar: false,
-                                        plugins: [
-                                        'advlist','advcode','advtable','autolink','checklist','export',
-                                        'lists','link','image','charmap','preview','anchor','searchreplace','visualblocks',
-                                        'powerpaste','fullscreen','formatpainter','insertdatetime','media','table','help','wordcount'
-                                        ],
-                                        toolbar: 'link undo redo | casechange blocks | bold italic backcolor | ' +
-                                        'alignleft aligncenter alignright alignjustify | ' +
-                                        'bullist numlist checklist | removeformat | a11ycheck code'
-                                        // content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
-                                      }}
-                                  /> 
+                                  <Editor
+                                    apiKey={text_api_key}
+                                    onInit={(evt, editor) => editorRef.current = editor}
+                                    onChange={(e) => { editedNoteHandler({...editedNote, content: editorRef.current.getContent()}) }}
+                                    initialValue={getNoteInfo?.content}
+                                    init={{
+                                    height: 300,
+                                    menubar: false,
+                                    plugins: [
+                                    'advlist','autolink', 'lists','link','image','charmap','preview','anchor','searchreplace','visualblocks','fullscreen','insertdatetime','media','table','help','wordcount'
+                                    ],
+                                    toolbar: 'link undo redo | casechange blocks | bold italic backcolor | ' +
+                                    'alignleft aligncenter alignright alignjustify | ' +
+                                    'bullist numlist checklist | removeformat | a11ycheck code'
+                                    }}
+                                    />
                                 <div className='flex gap-6'>
                                       <button onClick={editNote}>Apply changes</button>
                                       <button onClick={editNoteModal}>Cancel</button>
@@ -382,13 +404,13 @@ const sortedNotes = getNotes?.slice().sort((b, a) => {
                                       <p className="mb-5">Modified on: <b>DATE</b> <br/>
                                       by <b>NAME NEEDED</b>
                                       </p>
-                                      <p className="mb-5">Created on:<br/>
-                                      {FormatDate(getNoteInfo?.published_date)}
+                                      <p className="mb-5">Created on<br/>
+                                      {FormatDate(getNoteInfo?.published_date, true)}
                                       </p>
-                                      <p className="mb-5">Created by:<br/> <b>NAME NEEDED</b></p>
+                                      <p className="mb-5">Created by<br/> <b>NAME NEEDED</b></p>
                                   </div>
                                 </div>
-                            </div>
+                          </div>
                             <div className='task__button--danger'>
                                 <button className="btn btn--cancel mt-5" onClick={DeleteNoteWarningClick}>Delete note</button>
                             </div>
@@ -401,7 +423,7 @@ const sortedNotes = getNotes?.slice().sort((b, a) => {
           {deleteNoteWarning &&
                 <DeleteModal>
                     <div>
-                        <h3>Delete task?</h3>
+                        <h3>Delete note?</h3>
                         <div>
                             <button className='btn' onClick={() => {DeleteNoteWarningHandler(false)}}>Cancel</button>
                             <button className="btn btn--cancel" onClick={DeleteNote}>Delete</button>
@@ -409,6 +431,10 @@ const sortedNotes = getNotes?.slice().sort((b, a) => {
                     </div>
                 </DeleteModal>
             }
+
+          {addNoteMessage && 
+            <UpdateMessage copy="Note updated" />
+          }
 
     </Layout>
   )

@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 // TODO: Replace the following with your app's Firebase project configuration
 // See: https://support.google.com/firebase/answer/7015592
 const firebaseConfig = {
-      apiKey: "AIzaSyDpKTM3gfRYiYXOPAREtLgM2tLrI1ZDNVQ",
-      authDomain: "react-app-planner.firebaseapp.com",  
-      projectId: "react-app-planner",
-      storageBucket: "react-app-planner.appspot.com",
-      messagingSenderId: "295639782682",
-      appId: "1:295639782682:web:d86be5902eb6a12fdc88a3",
-    measurementId: "G-76LXPLYK1P"
+      // apiKey: "AIzaSyDpKTM3gfRYiYXOPAREtLgM2tLrI1ZDNVQ",
+      apiKey: `${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
+      authDomain: `${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}`,
+      projectId: `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}`,
+      storageBucket: `${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}`,
+      messagingSenderId: `${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}`,appId: `${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}`,
+      measurementId: `${process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}`,
 };
 
 // Initialize Firebase

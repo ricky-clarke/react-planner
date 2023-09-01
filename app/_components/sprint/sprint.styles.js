@@ -1,32 +1,9 @@
 import styled from 'styled-components';
 
-export const SprintColumn = styled.div`
-
-    .sprint__column__top {
-        background-color:#071020;
-        border:1px solid #10254A;
-        border-radius:5px;
-        max-height: calc(100vh - 210px);
-        overflow: auto;
-        margin-bottom:0.5rem;
-        padding:1rem;
-    }
-
-    h2 {
-        font-size:1.1rem;
-    }
-
-    button {
-        background-color: transparent;
-        font-size:0.825rem;
-        padding:0;
-
-        &:hover {
-            color:#03dffc;
-        }
-
-    }
-
+export const SprintColumnTop = styled.div`
+    max-height: calc(100vh - 210px);
+    overflow: auto;
+    margin-bottom:0.5rem;
 `;
 
 export const SprintColumnCard = styled.div`
@@ -47,6 +24,19 @@ h3 {
   margin: 0;
   padding:0.25em;
 }
+
+
+&.spint_completed {
+  // background-color:#03dffc;
+  //color:#10254A;
+  opacity:0.6;
+
+  &:hover {
+    opacity:1;
+  }
+
+}
+
 `;
 
 export const TaskCardMeta = styled.div`
@@ -79,6 +69,42 @@ export const TaskCardMeta = styled.div`
 
   }
 
+`;
+
+export const SprintColumnButton = styled.div`
+  button {
+    background-color: transparent;
+    display:flex;
+    font-size:0.825rem;
+    padding:0;
+
+    &:before{ 
+      background-color:green;
+      border-radius:50%;
+      content:"+";
+      color:#fff;
+      display:inline-block;
+      font-size:1.1em;
+      line-height: 14px;
+      margin-right:0.25em;
+      height:15px;
+      width:15px;
+    }
+
+    span {
+      opacity:0;
+      transform:translateX(-15px);
+      transition:0.3s ease all;
+
+    }
+    
+    &:hover span{
+      opacity:1;
+      transform:translateX(0);
+      transition:0.3s ease all;
+    }
+    
+  }
 `;
 
 export const CommentListContainer = styled.div` 

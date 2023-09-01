@@ -15,7 +15,6 @@ import {
      deleteDoc } from 'firebase/firestore';
 import { db } from '@/src/firebase';
 import globalContext from '@/app/_context/global-context';
-import { SprintColumn, SprintColumnCard, TaskCardMeta, CommentListContainer } from './sprint.styles';
 import {users} from '../../users';
 import { Editor } from '@tinymce/tinymce-react';
 import generateRandomString from '@/app/_functions/random_string';
@@ -24,11 +23,17 @@ import Comment from '../comment/comment.component';
 import CommentIcon from '@/app/_svgs/comment';
 import PencilIcon from '@/app/_svgs/pencil';
 import { DeleteModal } from '@/app/styles/delete-modal';
+import { SprintColumnTop, SprintColumnCard, TaskCardMeta, SprintColumnButton, CommentListContainer } from './sprint.styles';
+import { Card } from '@/app/styles/card.styles';
+import FormatDate from '@/app/_functions/formate_date';
+import UpdateMessage from '../update-message/update-message.component';
+import TaskCardComment from '../task-card-comment/task-card-comment.component';
 
 const Sprint = (props) => {
 
     const editorRef = useRef(null);
     const { state, dispatch } = useContext(globalContext);
+    const text_api_key = `${process.env.NEXT_PUBLIC_TINYMCE}`;
 
     // Get the first part of the URL (excluding an empty string at the beginning)
     const prof_id = usePathname()
@@ -71,6 +76,17 @@ const Sprint = (props) => {
     // Delete task
     const [deleteTaskWarning, DeleteTaskWarningHandler] = useState(false);
 
+    // udated form message
+    const [taskUpdatedMessage, taskUpdatedMessageHandler] = useState(false)
+
+    // Add task state
+    const [newItem, setNewTask] = useState({ 
+        status: 'on_hold',
+        project_id: project_id,
+        published_date : serverTimestamp(),
+        priority : false,
+    });
+
 
     useEffect ( () => {
 
@@ -86,6 +102,7 @@ const Sprint = (props) => {
 
         fetchData();
 
+        // For modal task
         async function fetchCommentData() {
 
             try {
@@ -131,6 +148,7 @@ const Sprint = (props) => {
 
     }, [defaultTaskInfo])
 
+    // Get task status
     useEffect( ()=> {
 
         async function fetchTaskStatus() {
@@ -177,17 +195,6 @@ const Sprint = (props) => {
         dispatch({type:"TASKID", payload: ''});
     }
 
-    const [newItem, setNewItem] = useState({ 
-        title: ' ',
-        description: ' ',
-        status: 'on_hold',
-        assigned: ' ' ,
-        project_id: project_id,
-        task_id : '',
-        published_date : serverTimestamp(),
-        priority : false,
-    });
-
     // Create task button
     const CreateTaskClick = (event) => {
 
@@ -202,46 +209,66 @@ const Sprint = (props) => {
     }
 
     // Add task to DB
-    const addItem = async (e) => {
+    const createTask = (e) => {
 
         e.preventDefault();
 
-        if(newItem.title !== ' ' || 
-            newItem.description !== ' '  ||
-            newItem.status !== ' ' ||
-            newItem.priority !== ' ' ||
-            newItem.assigned !== ' ' ||
-            newItem.published_date.trim() !== '') {
+        const addTask = async () => {
 
-        const randomString = generateRandomString(20);
+            try {
 
-        const profileRef = collection(db, "profile");
+                if(newItem.title !== ' ' || 
+                newItem.description !== ' '  ||
+                newItem.status !== ' ' ||
+                newItem.priority !== ' ' ||
+                newItem.assigned !== ' ' ||
+                newItem.published_date.trim() !== '') {
+    
+            const randomString = generateRandomString(20);
+    
+            const profileRef = collection(db, "profile");
+    
+                await setDoc(doc(profileRef, profile_id, 'projects', project_id, 'tasks', randomString), {
+                    task_name: newItem.title.trim(),
+                    description: newItem.description,
+                    status: newItem.status,
+                    assigned: newItem.assigned.trim(),
+                    project_id: project_id,
+                    published_date: serverTimestamp(),
+                });
+    
+                // Clear form values
+                setNewTask( {
+                    title: ' ',
+                    description: ' ',
+                    information: ' ',
+                    assigned: ' ',
+                    status: 'on_hold'
+                })
+    
+                createTaskHandler(false) // Hide form on submit
+                dispatch({type:"TASKID", payload: ''});
+    
+            }
 
-            await setDoc(doc(profileRef, profile_id, 'projects', project_id, 'tasks', randomString), {
-                task_name: newItem.title.trim(),
-                description: newItem.description,
-                status: newItem.status,
-                assigned: newItem.assigned.trim(),
-                project_id: project_id,
-                published_date: serverTimestamp(),
-            //    priority : newItem.priority
-            });
+            }
+            catch {
 
-            // Clear form values
-            setNewItem( {
-                title: ' ',
-                description: ' ',
-                information: ' ',
-                assigned: ' ',
-                status: 'on_hold'
-            })
-
-            createTaskHandler(false) // Hide form on submit
-            dispatch({type:"TASKID", payload: ''});
+            }
 
         }
 
+        addTask()
+
     }
+
+    const handleTaskInputChange = (event) => {
+        const { name, value } = event.target;
+        setNewTask((prevData) => ({
+          ...prevData,
+          [name]: value
+        }));
+    };
     
     // Read all tasks from DB
     useEffect ( () => {
@@ -293,6 +320,13 @@ const Sprint = (props) => {
             });
         })
 
+        return () => {
+            on_hold_shapshot();
+            in_progress_snapshot();
+            qa_snapshot();
+            completed_snapshot();
+          };
+
     }, [])
 
     // Edit button selected
@@ -329,30 +363,47 @@ const Sprint = (props) => {
             defaultTaskInfoHandler({})
             getCommentsHandler([])
             applyChangesHandler(false)
-           // dispatch({type:"TASKID", payload: ''});
             editedTaskHandler([])
-           // taskOpenHandler(false)
         }
 
     }
 
     // Edit description
-    const editDescription = async (e) => {
+    const editDescription = (e) => {
        
             e.preventDefault();
-    
-            if(editedTask.task_name !== '' ||
-            editedTask.description !== '')  {
-    
-            await updateDoc(doc(collection(db, "profile"), profile_id, 'projects', project_id, 'tasks', state.taskID ), {
-                task_name: editedTask.task_name.trim(),
-                description: editedTask.description,
-            });
-    
-                applyChangesHandler(false)
-                defaultTaskInfoHandler({ })
-    
+
+            const updatedDescription = async () => { 
+
+                try {
+
+                    if(editedTask.task_name !== '' ||
+                    editedTask.description !== '')  {
+            
+                    await updateDoc(doc(collection(db, "profile"), profile_id, 'projects', project_id, 'tasks', state.taskID ), {
+                        task_name: editedTask.task_name.trim(),
+                        description: editedTask.description,
+                    });
+            
+                        applyChangesHandler(false)
+                        defaultTaskInfoHandler({ })
+                        taskUpdatedMessageHandler(true)
+            
+                    }
+
+
+                }
+                catch (e) {
+                    console.error(e);
+                }
+
             }
+
+
+            updatedDescription()
+            taskUpdatedMessageHandler(false)
+    
+
     
     }
 
@@ -410,9 +461,7 @@ const Sprint = (props) => {
             // Delete task
             const docRef = doc(db, 'profile', profile_id, 'projects', project_id, 'tasks', state.taskID);
             deleteDoc(docRef)
-    
-      //     document.getElementById(state.taskID).style.display="none";
-    
+        
             DeleteTaskWarningHandler(false)
             taskOpenHandler(false)
             getCommentsHandler([])
@@ -421,92 +470,90 @@ const Sprint = (props) => {
     }
 
     // Sort notes by date in DESC order
-const sortedComments = getComments?.slice().sort((b, a) => {
-    return a.published_date?.seconds - b.published_date?.seconds;
-  });
+    const sortedComments = getComments?.slice().sort((b, a) => {
+        return a.published_date?.seconds - b.published_date?.seconds;
+    });
 
 
     return (
         <>
-            <SprintColumn id="sprint_column__on_hold">
-                <div className='sprint__column'>
-                    <div className='sprint__column__top'>
+            <div>
+                <Card className='sprint__column'>
+                    <SprintColumnTop>
                         <h2>On hold</h2>
                         {tasksOnHold?.map((task, i) => (
                              <SprintColumnCard key={i} onClick={() => {getTaskInfo(task.id)}}>
                                <h3>{task.task_name}</h3>
                                 <TaskCardMeta>
-                                    <p>date <span><CommentIcon />0</span></p>
-                                    <p>IMG</p>
-                                    {/* {new Date(taskInfo.timestamp)} */}
-                                    {/* <p className="m-0">{taskAssigned ? taskAssigned : 'Unassigned' }</p> */}
+                                    <p><span><CommentIcon /><TaskCardComment profile_id={profile_id} project_id={project_id} task_id={task.id}/></span></p>
+                                    <p className="m-0">{task.assigned ? task.assigned : 'Unassigned' }</p> 
                                 </TaskCardMeta>
                              </SprintColumnCard>
                         ))}
-                    </div>
-                     <div><button onClick={CreateTaskClick}>Create task</button></div>
-                </div>
-            </SprintColumn>
+                    </SprintColumnTop>
+                     <SprintColumnButton>
+                        <button onClick={CreateTaskClick}><span>Create task</span></button>
+                    </SprintColumnButton>
+                </Card>
+            </div>
 
-            <SprintColumn id="sprint_column__on_hold">
-                <div className='sprint__column'>
-                    <div className='sprint__column__top'>
+            <div>
+                <Card className='sprint__column'>
+                    <SprintColumnTop>
                         <h2>In progress</h2>
                         {taskInProgress?.map((task, i) => (
                             <SprintColumnCard key={i} onClick={() => {getTaskInfo(task.id)}}>
                                 <h3>{task.task_name}</h3>
                                 <TaskCardMeta>
-                                    <p>date <span><CommentIcon /> 0</span></p>
-                                    <p>IMG</p>
-                                    {/* {new Date(taskInfo.timestamp)} */}
-                                    {/* <p className="m-0">{taskAssigned ? taskAssigned : 'Unassigned' }</p> */}
+                                <p><span><CommentIcon /><TaskCardComment profile_id={profile_id} project_id={project_id} task_id={task.id}/></span></p>
+                                    <p className="m-0">{task.assigned ? task.assigned : 'Unassigned' }</p> 
                                 </TaskCardMeta>
                         </SprintColumnCard>
                         ))}
-                    </div>
-                     <div><button onClick={CreateTaskClick}>Create task</button></div>
-                </div>
-            </SprintColumn>
+                    </SprintColumnTop>
+                     <SprintColumnButton> <button onClick={CreateTaskClick}><span>Create task</span></button></SprintColumnButton>
+                </Card> 
+            </div>
 
-            <SprintColumn id="sprint_column__on_hold">
-                <div className='sprint__column'>
-                    <div className='sprint__column__top'>
-                        <h2>QA</h2>
-                        {taskQAItems?.map((task, i) => (
-                            <SprintColumnCard key={i} onClick={() => {getTaskInfo(task.id)}}>
-                                <h3>{task.task_name}</h3>
-                                <TaskCardMeta>
-                                    <p>date <span><CommentIcon /> 0</span></p>
-                                    <p>IMG</p>
-                                    {/* {new Date(taskInfo.timestamp)} */}
-                                    {/* <p className="m-0">{taskAssigned ? taskAssigned : 'Unassigned' }</p> */}
-                                </TaskCardMeta>
-                        </SprintColumnCard>
-                        ))}
-                    </div>
-                     <div><button onClick={CreateTaskClick}>Create task</button></div>
-                </div>
-            </SprintColumn>
+            <div className='sprint__column'>
+                <Card id="sprint_column__on_hold">
+                    <SprintColumnTop>
+                    <h2>QA</h2>
+                    {taskQAItems?.map((task, i) => (
+                        <SprintColumnCard key={i} onClick={() => {getTaskInfo(task.id)}}>
+                            <h3>{task.task_name}</h3>
+                            <TaskCardMeta>
+                            <p><span><CommentIcon /><TaskCardComment profile_id={profile_id} project_id={project_id} task_id={task.id}/></span></p>
+                                <p className="m-0">{task.assigned ? task.assigned : 'Unassigned' }</p> 
+                            </TaskCardMeta>
+                    </SprintColumnCard>
+                    ))}
+                    </SprintColumnTop>
+                    <SprintColumnButton>
+                        <button onClick={CreateTaskClick}><span>Create task</span></button>
+                    </SprintColumnButton>
+                </Card>
+            </div>
 
-            <SprintColumn id="sprint_column__on_hold">
-                <div className='sprint__column'>
-                    <div className='sprint__column__top'>
+            <div className='sprint__column'>
+                <Card id="sprint_column__on_hold">
+                    <SprintColumnTop>
                         <h2>Completed</h2>
                         {taskCompletedItems?.map((task, i) => (
-                            <SprintColumnCard key={i} onClick={() => {getTaskInfo(task.id)}}>
+                            <SprintColumnCard className='spint_completed' key={i} onClick={() => {getTaskInfo(task.id)}}>
                                 <h3>{task.task_name}</h3>
                                 <TaskCardMeta>
-                                    <p>date <span><CommentIcon /> 0</span></p>
-                                    <p>IMG</p>
-                                    {/* {new Date(taskInfo.timestamp)} */}
-                                    {/* <p className="m-0">{taskAssigned ? taskAssigned : 'Unassigned' }</p> */}
+                                    <p><span><CommentIcon /><TaskCardComment profile_id={profile_id} project_id={project_id} task_id={task.id}/></span></p>
+                                    <p className="m-0">{task.assigned ? task.assigned : 'Unassigned' }</p> 
                                 </TaskCardMeta>
                         </SprintColumnCard>
                         ))}
-                    </div>
-                     <div><button onClick={CreateTaskClick}>Create task</button></div>
-                </div>
-            </SprintColumn>
+                    </SprintColumnTop>
+                    <SprintColumnButton>
+                        <button onClick={CreateTaskClick}><span>Create task</span></button>
+                    </SprintColumnButton>
+                </Card>
+            </div>
 
             {taskOpen &&
                 <Modal>
@@ -516,29 +563,27 @@ const sortedComments = getComments?.slice().sort((b, a) => {
                                     <div>
                                         <form>
                                             <input 
-                                            placeholder={taskInfo.task_name}
+                                            defaultValue={taskInfo.task_name}
                                             className='mb-3'
                                             onChange={(e) => { editedTaskHandler({...editedTask, task_name: e.target.value}) }}
                                             type="text" 
                                             />
-                                            <Editor
-                                                apiKey="djgjx6t37zoqxtoml83855c5n48wf0and2mh3qvzfa39u7uo"
-                                                    onInit={(evt, editor) => editorRef.current = editor}
-                                                    onChange={(e) => { editedTaskHandler({...editedTask, description: editorRef.current.getContent()}) }}
-                                                    initialValue={taskInfo.description}
-                                                    init={{
-                                                    height: 200,
-                                                    menubar: false,
-                                                    plugins: [
-                                                    'advlist','advcode','advtable','autolink','checklist','export',
-                                                    'lists','link','image','charmap','preview','anchor','searchreplace','visualblocks',
-                                                    'powerpaste','fullscreen','formatpainter','insertdatetime','media','table','help','wordcount'
-                                                    ],
-                                                    toolbar: 'link undo redo | casechange blocks | bold italic backcolor | ' +
-                                                    'alignleft aligncenter alignright alignjustify | ' +
-                                                    'bullist numlist checklist | removeformat | a11ycheck code'
+                                             <Editor
+                                                apiKey={text_api_key}
+                                                onInit={(evt, editor) => editorRef.current = editor}
+                                                onChange={(e) => { editedTaskHandler({...editedTask, description: editorRef.current.getContent()}) }}
+                                                initialValue={taskInfo.description}
+                                                init={{
+                                                height: 200,
+                                                menubar: false,
+                                                plugins: [
+                                                'advlist','autolink', 'lists','link','image','charmap','preview','anchor','searchreplace','visualblocks','fullscreen','insertdatetime','media','table','help','wordcount'
+                                                ],
+                                                toolbar: 'link undo redo | casechange blocks | bold italic backcolor | ' +
+                                                'alignleft aligncenter alignright alignjustify | ' +
+                                                'bullist numlist checklist | removeformat | a11ycheck code'
                                                 }}
-                                            />
+                                                />
                                             <div className='flex gap-6'>
                                                 <button onClick={editDescription}>Apply changes</button>
                                                 <button onClick={edit}>Cancel</button>
@@ -564,26 +609,23 @@ const sortedComments = getComments?.slice().sort((b, a) => {
 
                                                 { addCommentField && 
                                                     <div>
-
                                                     <Editor
-                                                        apiKey="djgjx6t37zoqxtoml83855c5n48wf0and2mh3qvzfa39u7uo"
+                                                        apiKey={text_api_key}
                                                         onInit={(evt, editor) => editorRef.current = editor}
                                                         onChange={(e) => { newCommentHandler({...newComment, comment: editorRef.current.getContent()}) }}
-                                                        // initialValue="Add a description"
+                                                      //  initialValue={taskInfo.description}
                                                         init={{
                                                         height: 200,
                                                         menubar: false,
                                                         plugins: [
-                                                        'advlist','advcode','advtable','autolink','checklist','export',
-                                                        'lists','link','image','charmap','preview','anchor','searchreplace','visualblocks',
-                                                        'powerpaste','fullscreen','formatpainter','insertdatetime','media','table','help','wordcount'
+                                                        'advlist','autolink', 'lists','link','image','charmap','preview','anchor','searchreplace','visualblocks','fullscreen','insertdatetime','media','table','help','wordcount'
                                                         ],
                                                         toolbar: 'link undo redo | casechange blocks | bold italic backcolor | ' +
                                                         'alignleft aligncenter alignright alignjustify | ' +
                                                         'bullist numlist checklist | removeformat | a11ycheck code'
                                                         }}
-                                                    />
-                                                    <button className="btn btn--submit mb-4" onClick={addComment}>Add comment</button>
+                                                        />
+                                                        <button className="btn btn--submit mb-4" onClick={addComment}>Add comment</button>
 
                                                     </div>
                                                 }
@@ -594,7 +636,7 @@ const sortedComments = getComments?.slice().sort((b, a) => {
                                                 </button>
 
                                                 {sortedComments && sortedComments?.map((comment, i) => (
-                                                        <Comment key={i} count={i} content={comment.comment } published_date={comment.published_date }/>
+                                                    <Comment key={i} count={i} content={comment.comment } published_date={comment.published_date }/>
                                                     ))
                                                 }
 
@@ -608,7 +650,8 @@ const sortedComments = getComments?.slice().sort((b, a) => {
                             <div className='task__meta'>
                                 <div className='task__meta--top'>
                                     <div>
-                                        <p>Created on DATE NEEDED <br /> by <b>NAME NEEDED</b></p>
+                                    <p className="mb-5">Created on<br/>{FormatDate(taskInfo?.published_date, true)}</p>
+                                    <p>Created by<br/> <b>NAME NEEDED</b></p>
                                     </div>
                                     <div>
                                         <span className='label'>Status</span>
@@ -654,14 +697,15 @@ const sortedComments = getComments?.slice().sort((b, a) => {
 
             {createTaskShow &&
                 <Modal>
-                    <form>
+                    <form onSubmit={createTask}>
                         <div className='task__container'>
                                 <div className='task__main'>
                                     <h2>Create task</h2>
                                     <div>
                                         <p className='label'><label>Name</label></p>
                                         <input 
-                                        onChange={(e) => { setNewItem({...newItem, title: e.target.value}) }}
+                                        name="title"
+                                        onChange={handleTaskInputChange}
                                         type="text" 
                                         placeholder = "Task title" 
                                         />
@@ -669,22 +713,19 @@ const sortedComments = getComments?.slice().sort((b, a) => {
                                     <div>
                                         <p className='label'><label>Description</label></p>
                                         <Editor
-                                            apiKey="djgjx6t37zoqxtoml83855c5n48wf0and2mh3qvzfa39u7uo"
+                                            apiKey={text_api_key}
                                             onInit={(evt, editor) => editorRef.current = editor}
-                                            onChange={(e) => { setNewItem({...newItem, description: editorRef.current.getContent()}) }}
+                                            onChange={(e) => { setNewTask({...newItem, description: editorRef.current.getContent()}) }}
                                             initialValue="Add a description"
                                             init={{
                                             height: 300,
                                             menubar: false,
                                             plugins: [
-                                            'advlist','advcode','advtable','autolink','checklist','export',
-                                            'lists','link','image','charmap','preview','anchor','searchreplace','visualblocks',
-                                            'powerpaste','fullscreen','formatpainter','insertdatetime','media','table','help','wordcount'
+                                            'advlist','autolink', 'lists','link','image','charmap','preview','anchor','searchreplace','visualblocks','fullscreen','insertdatetime','media','table','help','wordcount'
                                             ],
                                             toolbar: 'link undo redo | casechange blocks | bold italic backcolor | ' +
                                             'alignleft aligncenter alignright alignjustify | ' +
                                             'bullist numlist checklist | removeformat | a11ycheck code'
-                                            // content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
                                             }}
                                             />
                                     </div>
@@ -697,7 +738,8 @@ const sortedComments = getComments?.slice().sort((b, a) => {
                                     <div>           
                                         <p className='label'><label>Status</label></p>
                                         <select 
-                                        onChange={(e) => { setNewItem({...newItem, status: e.target.value}) }}
+                                         name="status"
+                                         onChange={handleTaskInputChange}
                                         className="mb-3"
                                         defaultValue="on_hold"
                                         > 
@@ -710,7 +752,10 @@ const sortedComments = getComments?.slice().sort((b, a) => {
 
                                     <div>
                                         <p className='label'><label>Allocated to</label></p>
-                                         <select onChange={(e) => { setNewItem({...newItem, assigned: e.target.value}) }} className="mb-3"> 
+                                         <select 
+                                            name="assigned"
+                                            onChange={handleTaskInputChange}
+                                            className="mb-3"> 
                                             <option defaultValue>Unassigned</option>
                                                 {users.map((user, i) => (<option key={i}>{user.name}</option>))}
                                             </select>
@@ -725,7 +770,7 @@ const sortedComments = getComments?.slice().sort((b, a) => {
                                         </div> */}
 
                                     <div>
-                                        <button onClick={addItem} className='btn btn--submit mr-4'>Add task</button>
+                                        <button type="submit" className='btn btn--submit mr-4'>Create task</button>
                                         <button className="btn btn--d-grey mt-5" onClick={CancelCreateTask}>Cancel</button>
                                     </div>
 
@@ -735,6 +780,10 @@ const sortedComments = getComments?.slice().sort((b, a) => {
                     </form>
                     <div className="overlay" onClick={CancelCreateTask}></div>
                 </Modal>
+            }
+
+            {taskUpdatedMessage && 
+                <UpdateMessage copy="Task updated" />
             }
 
         </>

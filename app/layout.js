@@ -1,6 +1,9 @@
+'use client'
 import './globals.css'
+import { useEffect, useState } from 'react'
 import { Inter } from 'next/font/google'
 import { GlobalStateProvider } from './_context/global-context'
+// import SettingsForm from './_components/settings-form/settings-form.component'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -10,13 +13,42 @@ export const metadata = {
 }
 
 export default function RootLayout({ children }) {
+
+  const [primaryColor, primayColorHandle] = useState({
+    primary_color : '',
+    primary_font_color : ''
+  })
+
+  useEffect(() => {
+
+    const brandingJSON = localStorage.getItem('planner');
+    const branding = JSON.parse(brandingJSON);
+
+    primayColorHandle({
+      primary_color : branding.primary,
+      primary_font_color : branding.primary_font
+    })
+
+  }, [])
+
+  
+  const branding = {
+    primary_color: {
+      backgroundColor: primaryColor.primary_color, 
+      color: primaryColor.primary_font_color,
+    },
+
+  };
+
+
   return (
     <html lang="en">
       {/* <head><meta charSet="utf-8" /></head> */}
-      <body className={inter.className}>
+      <body className={inter.className} style={branding.primary_color}>
         <GlobalStateProvider >
          {children}
         </GlobalStateProvider>
+
       </body>
     </html>
   )

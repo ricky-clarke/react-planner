@@ -1,34 +1,24 @@
 import styled from 'styled-components';
 
 export const ModalContainer = styled.div`
-    background-color:rgba(0,0,0, 0.3);
-    display:flex;
-    justify-content:flex-end;
     height:100%;
-    inset:0 0 auto auto;
-    position: fixed;
-    width:100%;
-
-    .modal_container {
-        // background-color:#e0e0e0;
-        width:70%;
-    }
+    float:right;
+    width:70%;
     
     .label {
-       
         font-size:0.9em;
         font-weight:600;
         margin:0 0 0.5em 0;
     }
 
     form {
-        
         height:100%;
 
         input, select, textarea {
             background-color:transparent;
             border:1px solid #21427a;
             border-radius:5px;
+            margin-bottom:1em;
             padding:0.5em;
             width:100%;
         }
@@ -105,6 +95,7 @@ export const ModalContainer = styled.div`
 
             &--danger {
                 border-top:1px solid #03dffc;
+                padding-bottom:1em;
                 text-align:right;
             }
 
@@ -119,6 +110,11 @@ export const ModalContainer = styled.div`
         position:absolute;
         width:100%;
         z-index:-1;
+        
+        &--less-opacity {
+            background-color:transparent;
+        }
+
     }
 
 `;
