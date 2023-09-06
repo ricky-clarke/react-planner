@@ -9,6 +9,7 @@ export const UpdatedMessageContainer = styled.div`
     padding:1em;
     position:fixed;
     width:300px;
+    z-index:9;
     animation: fadeUp 3s forwards;
 
     @keyframes fadeUp {

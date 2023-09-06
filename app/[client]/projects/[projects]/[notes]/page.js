@@ -1,17 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useContext } from 'react';
 import { usePathname } from 'next/navigation';
-import { 
-    collection, 
-    setDoc, 
-    getDoc,
-    doc, 
-    query,
-    onSnapshot,
-    updateDoc,
-    deleteDoc,
-    serverTimestamp, 
-} from 'firebase/firestore';
+import { collection, setDoc, getDoc,doc, query, onSnapshot, updateDoc, deleteDoc, serverTimestamp} from 'firebase/firestore';
 import { db } from '@/src/firebase';
 import { Editor } from '@tinymce/tinymce-react';
 import Layout from "@/app/_components/layout/layout.component";
@@ -26,6 +16,9 @@ import PencilIcon from '@/app/_svgs/pencil';
 import { DeleteModal } from '@/app/styles/delete-modal';
 
 export default function Page({params}) {
+
+  const brandingJSON = localStorage.getItem('planner');
+  const branding = JSON.parse(brandingJSON);
 
   // Get the first part of the URL (excluding an empty string at the beginning)
   const prof_id = usePathname()
@@ -265,6 +258,14 @@ const sortedNotes = getNotes?.slice().sort((b, a) => {
   return a.published_date?.seconds - b.published_date?.seconds;
 });
 
+const branding_colors = {
+    secondary: {
+        backgroundColor : branding.secondary_bg, 
+        color : branding.secondary_font,
+    },
+
+};
+
   return (
     <Layout>
 
@@ -286,7 +287,7 @@ const sortedNotes = getNotes?.slice().sort((b, a) => {
               className="masonry-grid"
               columnClassName="masonry-grid_column">
                 {sortedNotes?.map((note, i) => (
-                 <Note key={i} onClick={() => { viewNote(note.id)}}>
+                 <Note key={i} onClick={() => { viewNote(note.id)}}  className="card" style={branding_colors.secondary}>
                       <h3>{note?.title}</h3>
                         <NoteMeta>
                               {FormatDate(note?.published_date, true)}

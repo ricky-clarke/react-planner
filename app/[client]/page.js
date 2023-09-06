@@ -24,31 +24,33 @@ export default function Page() {
 
   const text_api_key = `${process.env.NEXT_PUBLIC_TINYMCE}`;
 
-
   const router = useRouter();
 
-const prof_id = usePathname()
-const profile_id = prof_id.replace('/','')
+  const prof_id = usePathname()
+  const profile_id = prof_id.replace('/','')
 
-const { state, dispatch } = useContext(globalContext);
+  const { state, dispatch } = useContext(globalContext);
 
-const [profileInfo, getProfileInfo] = useState([ ]);
+  const brandingJSON = localStorage.getItem('planner');
+  const branding = JSON.parse(brandingJSON);
 
-const [projects, getProjects] = useState([ ]);
-const [closedProjects, getClosedProjects] = useState([ ]);
-const [formStatus, formStatusHandler] = useState(false)
+  const [profileInfo, getProfileInfo] = useState([ ]);
 
-const [showProjects, showProjectsHandler ] = useState('Open');
-const [editProfile, editProfileHandler ] = useState(false);
+  const [projects, getProjects] = useState([ ]);
+  const [closedProjects, getClosedProjects] = useState([ ]);
+  const [formStatus, formStatusHandler] = useState(false)
 
-// notes
-const [addNote, addNoteHandler ] = useState(false); // modal
-const [newNote, newNoteHandler ] = useState({}); // Add note
-const [getNotes, getNotesHandler] = useState(null); // Get notes
-const [noteAdded, noteAddedHandler] = useState(false); // Add note message
+  const [showProjects, showProjectsHandler ] = useState('Open');
+  const [editProfile, editProfileHandler ] = useState(false);
 
-// Delete profile warning
-const [deleteTaskWarning, deleteTaskWarningHandler] = useState(false);
+  // notes
+  const [addNote, addNoteHandler ] = useState(false); // modal
+  const [newNote, newNoteHandler ] = useState({}); // Add note
+  const [getNotes, getNotesHandler] = useState(null); // Get notes
+  const [noteAdded, noteAddedHandler] = useState(false); // Add note message
+
+  // Delete profile warning
+  const [deleteTaskWarning, deleteTaskWarningHandler] = useState(false);
 
 // Read profile projects from DB
 useEffect ( () => {
@@ -85,7 +87,6 @@ useEffect ( () => {
     
 }, [])
 
-
 // Get users
 const [users, getUsers] = useState([]);
 useEffect ( () => {
@@ -108,7 +109,6 @@ useEffect ( () => {
         };
   
 }, [])
-
 
 const updateProfileChange = (event) => {
   const { name, value } = event.target;
@@ -254,6 +254,16 @@ const addNoteSubmit = (e) => {
   
 }
 
+const branding_colors = {
+
+  button : {
+      backgroundColor: branding.button_bg_color, 
+      color: branding.button_font_color,
+  },
+  card_container : {
+      borderColor: branding.accent_color, 
+  },
+};
   
 return (
     <>
@@ -265,13 +275,16 @@ return (
             profile_name="Dashboard"
           />    
           <div className='flex'>
-            <button className='btn btn--submit float-right' onClick={() => {editProfileHandler(true)}}>Edit profile</button>
+            <button 
+             className='btn btn--submit float-right' 
+             style={branding_colors.button} 
+             onClick={() => {editProfileHandler(true)}}>Edit profile</button>
           </div>
       </div>
 
         <ClientDashboardGrid>
 
-            <Card className='dashboard__projects'>
+            <Card className='dashboard__projects card_container' style={branding_colors.card_container}>
         
                 <>
                   <div className='flex justify-between mb-3'>
@@ -279,11 +292,15 @@ return (
                     <div className='flex gap-5 content-center'>
                       <button 
                       className={showProjects === 'Closed' ? 'opacity-80' : 'color--light-blue'}
+                     
                       onClick={() => {showProjectsHandler('Open')}}>Open</button>
                       <button 
                       className={showProjects === 'Open' ? 'opacity-80' : 'color--light-blue'}
                       onClick={() => {showProjectsHandler('Closed')}}>Closed</button>
-                        <button className="btn btn--submit" onClick={displayAddProjectForm}>Create project</button>
+                        <button 
+                        className="btn btn--submit"
+                        onClick={displayAddProjectForm} 
+                        style={branding_colors.button}>Create project</button>
                     </div>
                   </div>
                  
@@ -311,7 +328,7 @@ return (
 
             </Card>
 
-            <Card>
+            <Card className='card_container' style={branding_colors.card_container}>
          
               <h2 className='mb-3'>Account manager</h2>
               <p>{profileInfo.account_manager}</p>
@@ -320,7 +337,7 @@ return (
               <p>{profileInfo.first_name} {profileInfo.last_name} - <a href={`mailto:${profileInfo.email}`}>{profileInfo.email}</a></p>
             </Card>
 
-            <Card className='dashboard__notes'>
+            <Card className='dashboard__notes card_container' style={branding_colors.card_container}>
               <div className='flex justify-between items-center gap-4 mb-3'>
                 <h2>Notes</h2>
                 <div className='flex items-center gap-4'>
@@ -328,6 +345,7 @@ return (
                   <div>
                     <button 
                     className='btn btn--submit float-right' 
+                    style={branding_colors.button}
                     onClick={() => {addNoteHandler(true), noteAddedHandler(false)}}>
                       Add note
                     </button>

@@ -99,7 +99,7 @@ const AddUserForm = () => {
                 </div>
 
             </div>
-                <div class="overlay" onClick={CancelUserCreate}></div>
+                <div className="overlay" onClick={CancelUserCreate}></div>
                 {userAddedMessage &&<UpdateMessage copy="User added" /> }
             </Modal>
         </>

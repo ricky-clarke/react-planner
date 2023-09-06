@@ -9,6 +9,7 @@ justify-content:center;
 inset:0;
 position: fixed;
 width:100%;
+z-index:9999;
 
 &:after {
     background-color: rgba(0,0,0, 0.7);

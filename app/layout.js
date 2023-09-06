@@ -3,7 +3,6 @@ import './globals.css'
 import { useEffect, useState } from 'react'
 import { Inter } from 'next/font/google'
 import { GlobalStateProvider } from './_context/global-context'
-// import SettingsForm from './_components/settings-form/settings-form.component'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -15,8 +14,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
 
   const [primaryColor, primayColorHandle] = useState({
-    primary_color : '',
-    primary_font_color : ''
+    primary_bg : '',
+    primary_font : ''
   })
 
   useEffect(() => {
@@ -25,8 +24,8 @@ export default function RootLayout({ children }) {
     const branding = JSON.parse(brandingJSON);
 
     primayColorHandle({
-      primary_color : branding.primary,
-      primary_font_color : branding.primary_font
+      primary_bg : branding?.primary_bg,
+      primary_font : branding?.primary_font
     })
 
   }, [])
@@ -34,8 +33,8 @@ export default function RootLayout({ children }) {
   
   const branding = {
     primary_color: {
-      backgroundColor: primaryColor.primary_color, 
-      color: primaryColor.primary_font_color,
+      backgroundColor: primaryColor?.primary_bg, 
+      color: primaryColor?.primary_font,
     },
 
   };
@@ -46,7 +45,7 @@ export default function RootLayout({ children }) {
       {/* <head><meta charSet="utf-8" /></head> */}
       <body className={inter.className} style={branding.primary_color}>
         <GlobalStateProvider >
-         {children}
+            {children}
         </GlobalStateProvider>
 
       </body>

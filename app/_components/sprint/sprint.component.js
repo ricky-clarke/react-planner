@@ -1,39 +1,35 @@
 'use client'
 import { useState, useEffect, useRef, useContext } from 'react';
+
 import { usePathname } from 'next/navigation';
-import { 
-    collection, 
-    setDoc, 
-    doc, 
-    querySnapshot, 
-    onSnapshot, 
-    query, 
-    where,
-     serverTimestamp, 
-     getDoc,
-     updateDoc,
-     deleteDoc } from 'firebase/firestore';
+import { collection, setDoc, doc, querySnapshot, onSnapshot, query, where, serverTimestamp, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/src/firebase';
+
 import globalContext from '@/app/_context/global-context';
-import {users} from '../../users';
+
 import { Editor } from '@tinymce/tinymce-react';
 import generateRandomString from '@/app/_functions/random_string';
+import FormatDate from '@/app/_functions/formate_date';
+
 import Modal from '../modal/modal.component';
 import Comment from '../comment/comment.component';
 import CommentIcon from '@/app/_svgs/comment';
+import AdminUsers from '../admin-users/admin-users.component';
+import UpdateMessage from '../update-message/update-message.component';
+import TaskCardComment from '../task-card-comment/task-card-comment.component';
+
 import PencilIcon from '@/app/_svgs/pencil';
 import { DeleteModal } from '@/app/styles/delete-modal';
 import { SprintColumnTop, SprintColumnCard, TaskCardMeta, SprintColumnButton, CommentListContainer } from './sprint.styles';
 import { Card } from '@/app/styles/card.styles';
-import FormatDate from '@/app/_functions/formate_date';
-import UpdateMessage from '../update-message/update-message.component';
-import TaskCardComment from '../task-card-comment/task-card-comment.component';
 
 const Sprint = (props) => {
 
     const editorRef = useRef(null);
     const { state, dispatch } = useContext(globalContext);
     const text_api_key = `${process.env.NEXT_PUBLIC_TINYMCE}`;
+
+    const [branding, brandingHandler] = useState({})
 
     // Get the first part of the URL (excluding an empty string at the beginning)
     const prof_id = usePathname()
@@ -63,7 +59,10 @@ const Sprint = (props) => {
     });
 
     // Get task status
-    const [getStatus, getStatusHandler] = useState('')
+   const [getStatus, getStatusHandler] = useState('')
+
+       // Get Assignee
+    const [getAssignee, getAssigneeHandler] = useState('')
 
     // Comments 
     const [addCommentField, addCommentFieldHandler] = useState(false);
@@ -86,7 +85,7 @@ const Sprint = (props) => {
         published_date : serverTimestamp(),
         priority : false,
     });
-
+    const [taskCreatedMessage, taskCreatedMessageHandler] = useState(false)
 
     useEffect ( () => {
 
@@ -165,6 +164,23 @@ const Sprint = (props) => {
 
     }, [taskInfo])
 
+    // Get assignee
+    useEffect( ()=> {
+
+        async function fetchTaskAssignee() {
+
+            try {
+                getAssigneeHandler(taskInfo.assigned)
+            
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        fetchTaskAssignee()
+
+    }, [taskInfo])
+
 
     // Modal task info
     const getTaskInfo = (task_id) => {
@@ -200,10 +216,10 @@ const Sprint = (props) => {
 
             if(createTaskShow == true) {
                 createTaskHandler(false)
-                //  createTaskStatusHandler(' ')
             }
             else {
                 createTaskHandler(true)
+                taskCreatedMessageHandler(true)
             }
     
     }
@@ -212,6 +228,8 @@ const Sprint = (props) => {
     const createTask = (e) => {
 
         e.preventDefault();
+
+      //  CreateTaskClick() // Hide form on submit
 
         const addTask = async () => {
 
@@ -224,9 +242,9 @@ const Sprint = (props) => {
                 newItem.assigned !== ' ' ||
                 newItem.published_date.trim() !== '') {
     
-            const randomString = generateRandomString(20);
+                const randomString = generateRandomString(20);
     
-            const profileRef = collection(db, "profile");
+                const profileRef = collection(db, "profile");
     
                 await setDoc(doc(profileRef, profile_id, 'projects', project_id, 'tasks', randomString), {
                     task_name: newItem.title.trim(),
@@ -246,7 +264,8 @@ const Sprint = (props) => {
                     status: 'on_hold'
                 })
     
-                createTaskHandler(false) // Hide form on submit
+                createTaskHandler(true) // Hide form on submit
+                taskCreatedMessageHandler(true)
                 dispatch({type:"TASKID", payload: ''});
     
             }
@@ -259,6 +278,7 @@ const Sprint = (props) => {
         }
 
         addTask()
+        taskCreatedMessageHandler(false)
 
     }
 
@@ -403,8 +423,29 @@ const Sprint = (props) => {
             updatedDescription()
             taskUpdatedMessageHandler(false)
     
+    }
 
-    
+    // Edt assignee
+    const editAssignee = async (e) => {
+       
+        e.preventDefault();
+
+        const select_val = e.target.value;
+
+        getAssigneeHandler(select_val)
+
+        if(select_val !== taskInfo.assigned)  {
+
+            await updateDoc(doc(collection(db, "profile"), profile_id, 'projects', project_id, 'tasks', state.taskID ), {
+                assigned: select_val,
+            });
+
+            defaultTaskInfoHandler({})
+            getCommentsHandler([])
+            applyChangesHandler(false)
+            editedTaskHandler([])
+        }
+
     }
 
     // Show comment form
@@ -474,21 +515,47 @@ const Sprint = (props) => {
         return a.published_date?.seconds - b.published_date?.seconds;
     });
 
+    useEffect(() => {
+  
+        const brandingJSON = localStorage.getItem('planner');
+        const branding = JSON.parse(brandingJSON);
+     
+        brandingHandler(branding)
+     
+    }, [])
 
+    const branding_colors = {
+        secondary : {
+            backgroundColor: branding?.secondary_bg, 
+            color: branding?.secondary_font,
+        },
+        button : {
+            backgroundColor: branding?.button_bg_color, 
+            color: branding?.button_font_color,
+        },
+        card_container : {
+            borderColor: branding?.accent_color, 
+        },
+    };
+  
     return (
         <>
             <div>
-                <Card className='sprint__column'>
+                <Card className='sprint__column card_container' style={branding_colors.card_container}>
                     <SprintColumnTop>
                         <h2>On hold</h2>
                         {tasksOnHold?.map((task, i) => (
-                             <SprintColumnCard key={i} onClick={() => {getTaskInfo(task.id)}}>
-                               <h3>{task.task_name}</h3>
-                                <TaskCardMeta>
-                                    <p><span><CommentIcon /><TaskCardComment profile_id={profile_id} project_id={project_id} task_id={task.id}/></span></p>
-                                    <p className="m-0">{task.assigned ? task.assigned : 'Unassigned' }</p> 
-                                </TaskCardMeta>
-                             </SprintColumnCard>
+                            <SprintColumnCard 
+                            className='card' 
+                            key={i}
+                            onClick={() => {getTaskInfo(task.id)}} 
+                            style={branding_colors.secondary}>
+                            <h3>{task.task_name}</h3>
+                            <TaskCardMeta>
+                                <p><span><CommentIcon /><TaskCardComment profile_id={profile_id} project_id={project_id} task_id={task.id}/></span></p>
+                                <p className="m-0">{task.assigned ? task.assigned : 'Unassigned' }</p> 
+                            </TaskCardMeta>
+                            </SprintColumnCard>
                         ))}
                     </SprintColumnTop>
                      <SprintColumnButton>
@@ -498,11 +565,15 @@ const Sprint = (props) => {
             </div>
 
             <div>
-                <Card className='sprint__column'>
+                <Card className='sprint__column card_container' style={branding_colors.card_container}>
                     <SprintColumnTop>
                         <h2>In progress</h2>
                         {taskInProgress?.map((task, i) => (
-                            <SprintColumnCard key={i} onClick={() => {getTaskInfo(task.id)}}>
+                             <SprintColumnCard 
+                             className='card' 
+                             key={i}
+                             onClick={() => {getTaskInfo(task.id)}} 
+                             style={branding_colors.secondary}>
                                 <h3>{task.task_name}</h3>
                                 <TaskCardMeta>
                                 <p><span><CommentIcon /><TaskCardComment profile_id={profile_id} project_id={project_id} task_id={task.id}/></span></p>
@@ -515,12 +586,16 @@ const Sprint = (props) => {
                 </Card> 
             </div>
 
-            <div className='sprint__column'>
-                <Card id="sprint_column__on_hold">
+            <div>
+                <Card className='sprint__column card_container' style={branding_colors.card_container}>
                     <SprintColumnTop>
                     <h2>QA</h2>
                     {taskQAItems?.map((task, i) => (
-                        <SprintColumnCard key={i} onClick={() => {getTaskInfo(task.id)}}>
+                           <SprintColumnCard 
+                           className='card' 
+                           key={i}
+                           onClick={() => {getTaskInfo(task.id)}} 
+                           style={branding_colors.secondary}>
                             <h3>{task.task_name}</h3>
                             <TaskCardMeta>
                             <p><span><CommentIcon /><TaskCardComment profile_id={profile_id} project_id={project_id} task_id={task.id}/></span></p>
@@ -535,12 +610,16 @@ const Sprint = (props) => {
                 </Card>
             </div>
 
-            <div className='sprint__column'>
-                <Card id="sprint_column__on_hold">
+            <div>
+                <Card className='sprint__column card_container' style={branding_colors.card_container}>
                     <SprintColumnTop>
                         <h2>Completed</h2>
                         {taskCompletedItems?.map((task, i) => (
-                            <SprintColumnCard className='spint_completed' key={i} onClick={() => {getTaskInfo(task.id)}}>
+                            <SprintColumnCard 
+                            className='spint_completed card' 
+                            key={i}
+                            onClick={() => {getTaskInfo(task.id)}} 
+                            style={branding_colors.secondary}>
                                 <h3>{task.task_name}</h3>
                                 <TaskCardMeta>
                                     <p><span><CommentIcon /><TaskCardComment profile_id={profile_id} project_id={project_id} task_id={task.id}/></span></p>
@@ -669,7 +748,15 @@ const Sprint = (props) => {
                                     </div> 
                                     <div>
                                         <span className='label'>Assignee</span>
-                                        <p>{taskInfo?.assigned ? taskInfo?.assigned : 'Not assigned'}</p>
+                                            <form>
+                                                  <select
+                                                   onChange={editAssignee}
+                                                    className="mb-3"
+                                                    value={getAssignee}>
+                                                    <option>Unassigned</option>
+                                                    <AdminUsers/>
+                                            </select> 
+                                            </form>
                                     </div>
                             </div>
 
@@ -681,18 +768,6 @@ const Sprint = (props) => {
                         </div>
                 <div className="overlay" onClick={modalClose}></div>
                 </Modal>
-            }
-
-            {deleteTaskWarning &&
-                <DeleteModal>
-                    <div>
-                        <h3>Delete task?</h3>
-                        <div>
-                            <button className='btn' onClick={() => {DeleteTaskWarningHandler(false)}}>Cancel</button>
-                            <button className="btn btn--cancel" onClick={DeleteTask}>Delete</button>
-                        </div>
-                    </div>
-                </DeleteModal>
             }
 
             {createTaskShow &&
@@ -752,15 +827,15 @@ const Sprint = (props) => {
 
                                     <div>
                                         <p className='label'><label>Allocated to</label></p>
-                                         <select 
+                                            <select
                                             name="assigned"
                                             onChange={handleTaskInputChange}
-                                            className="mb-3"> 
-                                            <option defaultValue>Unassigned</option>
-                                                {users.map((user, i) => (<option key={i}>{user.name}</option>))}
+                                            className="mb-3">
+                                                <option defaultValue>Unassigned</option>
+                                                <AdminUsers/>
                                             </select>
                                     </div>
-
+                                    
                                     {/* <div className='flex'>
                                         <p className='label'><label for="task_priority">high priority</label></p>
                                         <input 
@@ -782,8 +857,24 @@ const Sprint = (props) => {
                 </Modal>
             }
 
+            {taskCreatedMessage && 
+                <UpdateMessage copy="Task created" />
+            }
+
             {taskUpdatedMessage && 
                 <UpdateMessage copy="Task updated" />
+            }
+
+            {deleteTaskWarning &&
+                <DeleteModal>
+                    <div>
+                        <h3>Delete task?</h3>
+                        <div>
+                            <button className='btn' onClick={() => {DeleteTaskWarningHandler(false)}}>Cancel</button>
+                            <button className="btn btn--cancel" onClick={DeleteTask}>Delete</button>
+                        </div>
+                    </div>
+                </DeleteModal>
             }
 
         </>

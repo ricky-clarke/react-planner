@@ -11,7 +11,7 @@ export const SprintColumnCard = styled.div`
   border:2px solid #071020;
   border-radius: 5px;
   padding: 0.5rem 0.5rem 0.5rem 0.5rem;
-  position:relative;
+  // position:relative;
   margin-top: 1rem;
 
 &:hover {
@@ -24,7 +24,6 @@ h3 {
   margin: 0;
   padding:0.25em;
 }
-
 
 &.spint_completed {
   // background-color:#03dffc;

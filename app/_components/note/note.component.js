@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { usePathname  } from 'next/navigation'
 // import globalContext from '@/app/_context/global-context';
 import { collection, doc, updateDoc, setDoc, serverTimestamp, deleteDoc} from 'firebase/firestore';
@@ -19,7 +19,6 @@ const Note = (props) => {
     const profile_id = prof_id.replace('/','') // Get profile ID
 
     const text_api_key = `${process.env.NEXT_PUBLIC_TINYMCE}`;
-
 
     const [ openNoteModal, openNoteModalHandler] = useState(null)
     const [ editNote, editNoteHandler] = useState(null)
@@ -93,7 +92,6 @@ const Note = (props) => {
 
     }
 
-
     // Delete note after delete selected in warning
     const DeleteNote = () => {
     
@@ -103,12 +101,36 @@ const Note = (props) => {
         DeleteNoteWarningHandler(false)
         openNoteModalHandler(false)
     
-}
+    }
 
+    const brandingJSON = localStorage.getItem('planner');
+    const branding = JSON.parse(brandingJSON);
+
+    const [secondaryColor, secondaryColorHandler] = useState({
+        secondary_bg : '',
+        secondary_font_color : '',
+      })
+
+    useEffect(() => {
+
+          secondaryColorHandler({
+            secondary_bg : branding?.secondary_bg,
+            secondary_font : branding?.secondary_font,
+        })
+    
+    }, [])
+
+    const branding_colors = {
+        secondary: {
+            backgroundColor : secondaryColor?.secondary_bg, 
+            color : secondaryColor?.secondary_font,
+        },
+
+    };
 
     return (
         <>
-            <NoteCard className='card'>
+            <NoteCard className='card' style={branding_colors.secondary}>
                 <button className="flex justify-between w-full" onClick={openNote}><h4>{title}</h4><span>{FormatDate(publish_date, true)}</span></button>
             </NoteCard>
 

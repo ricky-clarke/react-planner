@@ -14,6 +14,8 @@ export default function Dashboard() {
   const { state, dispatch } = useContext(globalContext);
   const [projects, setProjects] = useState([]);
   const [users, getUsers] = useState([]);
+  const brandingJSON = localStorage.getItem('planner');
+  const branding = JSON.parse(brandingJSON);
 
     // Read profiles from DB
     useEffect ( () => {
@@ -62,43 +64,22 @@ export default function Dashboard() {
   }
 
 
-  const [primaryColor, primayColorHandle] = useState({
-    primary_color : '',
-    primary_font_color : '',
-    accent_color: ''
-  })
-
-  useEffect(() => {
-
-    const brandingJSON = localStorage.getItem('planner');
-    const branding = JSON.parse(brandingJSON);
-
-    primayColorHandle({
-      button_bg_color : branding.button_bg_color,
-      button_font_color : branding.button_font_color,
-      accent_color : branding.accent_color,
-    })
-
-  }, [])
-
-  const branding = {
+  const branding_colors = {
     button : {
-      backgroundColor: primaryColor.button_bg_color, 
-      color: primaryColor.button_font_color,
+      backgroundColor: branding.button_bg, 
+      color: branding.button_font
     },
     card_container : {
-      borderColor: primaryColor.accent_color, 
+      borderColor: branding.accent_color, 
     },
-  };
-
-
+};
 
   return (
     <Layout>
         <h1 className='mb-[20px]'>Dashboard</h1>       
         <ClientDashboardGrid>
 
-          <Card className='card_container' style={branding.card_container}>
+          <Card className='card_container' style={branding_colors.card_container}>
               <>
                 <div className='flex justify-between mb-3'>
                   <h2>Profiles</h2>
@@ -106,7 +87,7 @@ export default function Dashboard() {
                   <button 
                   className="btn btn--submit" 
                   onClick={addNewProfile}
-                  style={branding.button}>Create profile</button>
+                  style={branding_colors.button}>Create profile</button>
                   </div>
                 </div>
               
@@ -123,11 +104,11 @@ export default function Dashboard() {
 
           </Card>
 
-          <Card className='card_container' style={branding.card_container}>
+          <Card className='card_container' style={branding_colors.card_container}>
             <button
             onClick={addUser}
             className='btn btn--submit float-right'
-            style={branding.button}>Add a user</button>
+            style={branding_colors.button}>Add a user</button>
 
             <h2 className='mb-3'>People</h2>
                 {users.map((user, id) => (

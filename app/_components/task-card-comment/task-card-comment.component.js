@@ -1,5 +1,6 @@
+'use client'
 import { useState, useEffect } from 'react';
-import {  collection,  onSnapshot,  query } from 'firebase/firestore';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/src/firebase';
 
 const TaskCardComment = (props) => {
@@ -33,9 +34,7 @@ const TaskCardComment = (props) => {
 
     return (
         <>
-            <p></p>
             <span>{taskComments.length > 0 ? taskComments.length : '0'}</span>
-            
         </>
     )
 }

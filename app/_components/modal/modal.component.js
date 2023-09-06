@@ -24,6 +24,7 @@ const Modal = ({ children }) => {
                         height: '100%',
                         inset:0,
                         position: 'fixed',
+                        zIndex: '9',
                       //  background: 'rgba(0,0,0,0.3)',
                         width: '100%'
                       }}

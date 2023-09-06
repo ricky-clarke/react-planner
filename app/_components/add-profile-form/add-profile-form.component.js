@@ -143,7 +143,7 @@ const AddProfileForm = () => {
                             </div>
                         </div>
                     </div>
-                <div class="overlay" onClick={CancelCreateProfile}></div>
+                <div className="overlay" onClick={CancelCreateProfile}></div>
             </Modal>
 
     )

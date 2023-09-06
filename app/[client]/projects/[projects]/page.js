@@ -5,7 +5,7 @@ import { doc, getDoc, updateDoc, collection, deleteDoc } from 'firebase/firestor
 import { db } from '@/src/firebase';
 import ProjectHeader from "@/app/_components/project-header/project-header.component";
 import Sprint from "@/app/_components/sprint/sprint.component"
-import globalContext from "@/app/_context/global-context";
+// import globalContext from "@/app/_context/global-context";
 import Layout from "@/app/_components/layout/layout.component";
 import Modal from "@/app/_components/modal/modal.component";
 import { DeleteModal } from "@/app/styles/delete-modal";
@@ -17,9 +17,21 @@ export default function Page({ params }) {
   const project_id = params.projects;
   const router = useRouter();
   
-  const { state } = useContext(globalContext);
+  // const { state } = useContext(globalContext);
   const [projectInfo, ProjectInfoHandler] = useState({})
   const [projectSettingsModal, projectSettingsModalHandler] = useState(false)
+
+  const [branding, brandingHandler] = useState({})
+
+  useEffect(() => {
+
+   const brandingJSON = localStorage.getItem('planner');
+   const branding = JSON.parse(brandingJSON);
+
+   brandingHandler(branding)
+
+  }, [])
+
 
   // Get the first part of the URL (excluding an empty string at the beginning)
   const prof_id = usePathname()
@@ -173,6 +185,13 @@ const reOpenProjectClick = () => {
 
 }
 
+const branding_colors = {
+  button: {
+      backgroundColor : branding?.button_bg, 
+      color : branding?.button_font,
+  },
+};
+
   return (
     <Layout>
 
@@ -187,15 +206,13 @@ const reOpenProjectClick = () => {
               <b>Tasks</b>
             </a>
             <a href={`${prof_id}/notes`}>Notes</a>|
-            <button className="btn btn--submit" onClick={openProjectSettings}>Project settings</button>
+            <button className="btn btn--submit" onClick={openProjectSettings} style={branding_colors.button}>Project settings</button>
           </div>
       </div>
 
       <div className="sprint_grid">
         <Sprint project_id={project_id} />
       </div>
-
-      {state.taskOpen === true && <TaskCardEdit project_id={project_id} />}
 
       {projectSettingsModal && (
         <Modal>
